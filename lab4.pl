@@ -19,20 +19,20 @@ swap(A,B):-
 	append(Begin,['b','w','_'|Tail],A),
 	append(Begin,['_','w','b'|Tail],B).
 
-цель(['w','w','w','_','b','b','b']).
+goal(['w','w','w','_','b','b','b']).
 
-решить( Старт, Решение) :-
-    вширину( [ [Старт] ], Решение).
+solve( Start, Solution) :-
+    bfs( [ [Start] ], Solution).
 
-вширину( [ [Верш | Путь] | _ ], [Верш | Путь] ) :- 
-    цель( Верш).
+bfs( [ [Node | Path] | _ ], [Node | Path] ) :- 
+    goal( Node).
  
-вширину( [ [В | Путь] | Пути], Решение ) :-
-    bagof( [В1, В | Путь ],
-          ( swap( В, В1), not(member( В1, [В | Путь]))),
-          НовПути),
-    	append( Пути, НовПути, Пути1),  !,
-    	вширину( Пути1, Решение);
-    	вширину( Пути, Решение).
+bfs( [ [N | Path] | Paths], Solution ) :-
+    bagof( [N1, N | Path ],
+          ( swap( N, N1), not(member( N1, [N | Path]))),
+          NewPaths),
+    	append( Paths, NewPaths, Paths1),  !,
+    	bfs( Paths1, Solution);
+    	bfs( Paths, Solution).
 
-?- решить(['b','b','b','_','w','w','w'], X).
+?- solve(['b','b','b','_','w','w','w'], X).
