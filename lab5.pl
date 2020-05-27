@@ -1,70 +1,69 @@
 goal([3,_]).
-
-next([X,Y],[9,Y],1)-
-    X  9.
-next([X,Y],[0,Y],1)-
-    X  0.
-next([X,Y],[X,5],1)-
-    Y  5.
-next([X,Y],[X,0],1)-
-    Y  0.
-next([X,Y],[0,Y1],1)-
-    X  0,
-    Y+X = 5,
+ 
+next([X,Y],[9,Y],1):-
+    X < 9.
+next([X,Y],[0,Y],1):-
+    X > 0.
+next([X,Y],[X,5],1):-
+    Y < 5.
+next([X,Y],[X,0],1):-
+    Y > 0.
+next([X,Y],[0,Y1],1):-
+    X > 0,
+    Y+X =< 5,
     Y1 is X+Y.
-next([X,Y],[Ost,5],1)-
-    X  0,
-    X+Y  5,
+next([X,Y],[Ost,5],1):-
+    X > 0,
+    X+Y > 5,
     Ost is (X+Y)-5.
-next([X,Y],[X1,0],1)-
-    Y  0,
-    X+Y = 9,
+next([X,Y],[X1,0],1):-
+    Y > 0,
+    X+Y =< 9,
     X1 is X+Y.
-next([X,Y],s[9,Ost],1)-
-    Y  0,
-    X+Y  9,
+next([X,Y],[9,Ost],1):-
+    Y > 0,
+    X+Y > 9,
     Ost is (X+Y)-9.
 
-solve_astar(Node, PathCost) -
-	estimate(Node, Estimate),
-	astar([[Node]0Estimate], RevPathCost_),
-	reverse(RevPath, Path).
+solve(Node, Path/Cost) :-
+  estimate(Node, Estimate),
+  astar([[Node]/0/Estimate], Path/Cost/_).
 
-estimate(State, Estimate)-
+estimate(State, Estimate):-
     goal(Goal),
-    count(State, Goal, Estimate).
+    estimate_count(State, Goal, Estimate).
 
-count(X,X,0)-!.
+estimate_count(X,X,0):-!.
 
-count([H1_],[H2_],Result)-
-  	Result is abs(H1-H2).
+estimate_count([H1|_],[H2|_],Result):-
+    Result is abs(H1-H2).
 
-move_astar([NodePath]Cost_, [NextNode,NodePath]NewCostEst) -
-	next(Node, NextNode, StepCost),
-	+ member(NextNode, Path),
-	NewCost is Cost + StepCost,
-	estimate(NextNode, Est).
+astar(Paths, Path) :-
+  choose_min(Paths, Path),
+  Path = [Node|_]/_/_,
+  goal(Node).
 
-get_best([Path], Path)-!.
+astar(Paths, Solution) :-
+  choose_min(Paths, BestPath),
+  select(BestPath, Paths, OtherPaths),
+  expand_astar(BestPath, ExpPaths),
+  append(OtherPaths, ExpPaths, NewPaths),
+  astar(NewPaths, Solution).
 
-get_best([Path1Cost1Est1,_Cost2Est2Paths], BestPath) -
-	Cost1 + Est1 = Cost2 + Est2, !,
-	get_best([Path1Cost1Est1Paths], BestPath).
+next_step([Node|Path]/Cost/_, [NextNode,Node|Path]/NewCost/Est) :-
+  next(Node, NextNode, StepCost),
+  \+ member(NextNode, Path),
+  NewCost is Cost + StepCost,
+  estimate(NextNode, Est).
 
-get_best([_Paths], BestPath) -
-	get_best(Paths, BestPath).
+expand_astar(Path, ExpPaths) :-
+  findall(NewPath, next_step(Path,NewPath), ExpPaths).
 
-expand_astar(Path, ExpPaths) -
-	findall(NewPath, move_astar(Path,NewPath), ExpPaths).
+choose_min([Path], Path) :- !.
 
-astar(Paths, Path) -
-	get_best(Paths, Path),
-	Path = [Node_]__,
-	goal(Node).
+choose_min([Path1/Cost1/Est1,_/Cost2/Est2|Paths], BestPath) :-
+  Cost1 + Est1 =< Cost2 + Est2, !,
+  choose_min([Path1/Cost1/Est1|Paths], BestPath).
 
-astar(Paths, SolutionPath) -
-	get_best(Paths, BestPath),
-	select(BestPath, Paths, OtherPaths),
-	expand_astar(BestPath, ExpPaths),
-	append(OtherPaths, ExpPaths, NewPaths),
-	astar(NewPaths, SolutionPath).
+choose_min([_|Paths], BestPath) :-
+  choose_min(Paths, BestPath).
